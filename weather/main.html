@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>메인화면</title>
+    <meta charset='utf-8'/>
+
+    <link href='lib\main.css' rel='stylesheet'/>
+
+    <script src='lib\main.js'></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                // Tool Bar 목록 document : https://fullcalendar.io/docs/toolbar
+                headerToolbar: {
+                    left: 'prevYear,prev,next,nextYear today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,dayGridDay'
+                },
+                selectable: true,
+                selectMirror: true,
+                navLinks: true, // can click day/week names to navigate views
+                editable: true,
+                //events: JSON.parse(JSON.stringify(scheduleList)),
+
+                dayMaxEvents: true, // allow "more" link when too many events
+                // 이벤트 객체 필드 document : https://fullcalendar.io/docs/event-object
+            });
+            calendar.render();
+
+            let token = localStorage.getItem('jwt-token') ? localStorage.getItem('jwt-token') : document.cookie.split("kakao-token=")[1];
+            let url = localStorage.getItem('jwt-token') ? "http://seumchae.iptime.org:9323/user/getUser" : "http://seumchae.iptime.org:9323/user/getUserByKakaoToken";
+
+            (async () => {
+                let responseData = await postFormFilesAsJson({url});
+                console.log(responseData)
+                let email = responseData["email"]
+
+                let alertURL = `http://seumchae.iptime.org:9323/calander/getAlert`
+                let allAlerts = await getAlerts({alertURL,email})
+                console.log(allAlerts)
+
+                if(allAlerts.length >= 1) {
+                    let al = document.getElementById("menu")
+                    let li = document.createElement("p")
+                    allAlerts.forEach((e,i,a) => {
+                        li.innerHTML += `<li>${e}</li><br>`
+                        li.innerHTML += `<div class="dividing3"></div>`
+                    })
+                    al.appendChild(li)
+                }
+
+
+                let geturl = "http://seumchae.iptime.org:9323/calander/getUserGroupSchedule"
+                let schedule = await getSchedule({email, geturl})
+                if(schedule.length >= 1) {
+                    schedule.forEach((e, i, a) => {
+                        console.log(e)
+                        console.log(formatDate(e["appointmentDue"]+1).toString())
+                        calendar.addEvent({
+                            "title": `${getIcon(e["weatherIcon"])}${e["scheduleName"].toString()}`,
+                            "start": formatDate(e["appointment"],false).toString(),
+                            "end" : formatDate(e["appointmentDue"],true).toString(),
+                            "color": getColor(e["weather"]),
+                        })
+                    });
+                    calendar.resumeRendering();
+                }
+                
+                    // console.log(temp)
+                    // scheduleList.push(temp);\
+                
+
+            })();
+            function getColor(w) {
+                if (w == "O") {
+                    return "#" + Math.round(Math.random() * 0x00ffff).toString(16)
+                }
+                return "#c02060"
+            }
+            async function getAlerts({alertURL,email}){
+                let fetchOptions = {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                    },
+                    body :email
+                };
+                let res = await fetch(alertURL, fetchOptions)
+                return res.json();
+            }
+
+            async function postFormFilesAsJson({url}) {
+                let fetchOptions = {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                    },
+                    body: token,
+                };
+                let res = await fetch(url, fetchOptions)
+                return res.json();
+            }
+
+            async function getSchedule({email, geturl}) {
+                let fetchOptions = {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                    },
+                    body: email,
+                };
+                let res = await fetch(geturl, fetchOptions)
+                return res.json();
+            }
+
+            function formatDate(date,isEnd) {
+                var d = new Date(date)
+                if(isEnd) {
+                    d.setDate(d.getDate() + 1);
+                }
+                return d.toISOString().split("T")[0]
+            }
+            function formatDate2(date) {
+                
+                var d = new Date(date),
+                    month = '' + (d.getMonth() + 1),
+                    day = '' + d.getDate(),
+                    year = d.getFullYear();
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+                return [year, month, day].join('-');
+            }
+
+        });
+
+        function getIcon(v) {
+            switch (v) {
+                case '01':
+                    return '☀️'
+
+                case '02':
+                    return '⛅'
+
+                case '03':
+                    return '☁️'
+
+                case '04':
+                    return '☁️'
+
+                case '09':
+                    return '🌧️'
+
+                case '10':
+                    return '🌦️'
+
+                case '11':
+                    return '⛈️'
+
+                case '13':
+                    return '❄️'
+
+                case '50':
+                    return '🌫️'
+            }
+        }
+    </script>
+</head>
+
+<body>
+
+<div class="navBox">
+    <img class="iconBtn" src="profile.png" style="margin-left: -5px"/>
+
+    <img class="iconBtn" id="menuBtn" src="free-icon-bells-4298686.png"/>
+</div>
+<br>
+<div class="menuWrap">
+    <nav id="menu">
+
+        <div class="dividing3"></div>
+    </nav>
+</div>
+
+
+<!-- <a href="mypage.html">
+    <img class="main_profile_img" src="profile.png">
+</a> -->
+
+
+<!-- 수정 -->
+<!-- 알림 모양 추가 -->
+<!-- 숫자 알림 개수 -->
+<!-- 알림 목록으로 이동 -->
+<!-- <div class="bell">
+    <p class="docbtn">
+        <a href="#" class="button" style="width:80px; position:relative;"><span class="nav-counter"></span>
+            <img src="free-icon-bells-4298686.png" class="bell_img"></a>
+    </p>
+
+</div> -->
+
+
+<div id='calendar'></div>
+<div>
+    <!-- <button type="button"> -->
+    <img class="plus_button" src="icons8-plus-48.png" alt="">
+</div>
+<!-- </button> -->
+
+
+<div class="under_nav">
+    <ul class="under_nav_icon">
+        <li class="under_nav_cal">
+            <a href="main.html">
+                <div>
+                    <em></em>
+                    <span>캘린더</span>
+                </div>
+            </a>
+        </li>
+        <!-- <li class="under_nav_cal2">
+            <a href="weather.html">
+                <div>
+                    <em></em>
+                    <span>날씨</span>
+                </div>
+            </a>
+        </li> -->
+        <li class="under_nav_cal3">
+            <!--   일정 목록을 보여줘야함  서버에서 어떻게 오는지 몰라 -->
+            <a href="plan_per.html">
+                <div>
+                    <em></em>
+                    <span>개인</span>
+                </div>
+            </a>
+        </li>
+        <li class="under_nav_cal4">
+            <!--   일정 목록을 보여줘야함  서버에서 어떻게 오는지 몰라 -->
+            <a href="plan_gr.html">
+                <div>
+                    <em></em>
+                    <span>그룹</span>
+                </div>
+            </a>
+        </li>
+        <li class="under_nav_cal5">
+            <a href="mypage.html">
+                <div>
+                    <em></em>
+                    <span>마이페이지</span>
+                </div>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<div>
+
+</div>
+
+
+<ul class="side" style="font-size: 25px;">
+    <li><a href="make_personal_plan.html" ;>개인 일정</a></li>
+    <li><a href="make_group_plan.html">그룹 일정</a></li>
+</ul>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document
+            .querySelector("#menuBtn")
+            .addEventListener("click", function (e) {
+                if (document.querySelector(".menuWrap").classList.contains("on")) {
+                    //메뉴 slide
+                    document.querySelector(".menuWrap").classList.remove("on");
+                    document.getElementById("menuBtn").src = "free-icon-bells-4298686.png";
+                    document.querySelector("#menuBtn").classList.remove("btnRotate");
+                    document.querySelector("#dimmed").remove();
+                } else {
+                    //메뉴 slideIn
+                    document.querySelector(".menuWrap").classList.add("on");
+                    document.getElementById("menuBtn").src = "close.png";
+                    document.querySelector("#menuBtn").classList.add("btnRotate");
+                    let div = document.createElement("div");
+                    div.id = "dimmed";
+                    document.body.append(div);
+
+                    //페이지 스크롤 락  모바일 이벤트 차단
+                    document
+                        .querySelector("#dimmed")
+                        .addEventListener(
+                            "scroll touchmove touchend mousewheel",
+                            function (e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return false;
+                            }
+                        );
+                }
+            });
+    });
+</script>
+<script>
+    document.getElementsByClassName('plus_button')[0].addEventListener('click', function () {
+        document.getElementsByClassName('side')[0].classList.toggle('show');
+    })
+</script>
+<!--유저 데이터 가져오기-->
+<script>
+</script>
+<!-- 제이쿼리 -->
+<script src="https://code.jquery.com/jquery-3.6.1.min.js"
+        integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
+
+
+
+<script>
+    jQuery(function ($) {
+        $("body").css("display", "none");
+        $("body").fadeIn(500);
+        $("a.transition").click(function (event) {
+            event.preventDefault();
+            linkLocation = this.href;
+            $("body").fadeOut(500, redirectPage);
+        });
+
+        function redirectPage() {
+            window.location = linkLocation;
+        }
+    });
+
+</script>
+
+</body>
+
+</html>
+
+
+

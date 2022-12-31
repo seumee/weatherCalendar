@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>그룹일정생성</title>
+    <link rel="stylesheet" href="CSS/index_my.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <form id = "createSchedule">
+
+        <div>
+            <a href="javascript:window.history.back();">
+                <img style="margin: 0; width: 8%;" class="back" src="free-icon-left-7666138.png">
+            </a>
+
+            <h1 style="margin: 0;">그룹 일정</h1>
+        </div>
+        <div class="dividing"></div>
+
+        <div class="members_input">
+            <h3>일정 제목</h3>
+        </div>
+        <div class="members_input_position bottom_new">
+            <input class="members_input_design" type="name" name="name" id = "scheduleName"placeholder="일정 제목">
+        </div>
+        <p class="dividing2"></p>
+
+        <div class="members_input">
+            <h3>그룹 이름</h3>
+        </div>
+        <div class="members_input_position">
+            <input class="members_input_design" type="text" name="gr_name" id = "groupId" placeholder="그룹 이름">
+        </div>
+        <p class="dividing2"></p>
+
+
+        <div class="members_input">
+            <h3>+ 멤버 초대</h3>
+        </div>
+        <div class="members_input_position">
+            <input class="members_input_design" type="text" id="member"  name="email" placeholder="Friend__1@gmail.com">
+        </div>
+        <p class="dividing2"></p>
+
+        <div class="members_input">
+            <h3>날짜 선택</h3>
+        </div>
+        <div class="members_input_position">
+            <input class="members_input_design date_design" type="date" id = "start" name="date_start">
+        </div>
+        <p class="wave">~</p>
+        <div class="members_input_position">
+            <input class="members_input_design date_design tem" type="date" id = "end" name="date_end">
+        </div>
+
+        <div style="clear: both;"></div>
+
+        <p class="dividing2"></p>
+
+        <div class="members_input">
+            <h3>장소 선택</h3>
+        </div>
+
+        <!-- 추가 -->
+        <!-- 기존의 장소선택은 삭제 -->
+        <!-- input디자인 길이나 상세주소같이 필요없으면 주석처리해주세요 -->
+
+        <div class="members_input_position">
+            <!-- <input class="members_input_design" type="place" name="place" placeholder="장소 선택"> -->
+
+            <input type="text" class="members_input_design" id="sample6_postcode" placeholder="우편번호"
+                style="width: 25%;">
+            <input type="button" onclick="sample6_execDaumPostcode()" value="우편번호 찾기"><br>
+            <input type="text" class="members_input_design" id="sample6_address" placeholder="주소"
+                style="width: 60%;"><br>
+            <input type="text" class="members_input_design" id="sample6_detailAddress" placeholder="상세주소">
+            <input type="text" class="members_input_design" id="sample6_extraAddress" placeholder="참고항목"
+                style="width: 60%;">
+        </div>
+
+        <div>
+            <button class="button_design_short4 store_button" type="submit">
+                저장하기
+            </button>
+        </div>
+        
+    </form>
+
+
+
+    <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <script>
+        function sample6_execDaumPostcode() {
+            new daum.Postcode({
+                oncomplete: function (data) {
+
+                    var addr = '';
+                    var extraAddr = '';
+
+
+                    if (data.userSelectedType === 'R') {
+                        addr = data.roadAddress;
+                    } else {
+                        addr = data.jibunAddress;
+                    }
+
+
+                    if (data.userSelectedType === 'R') {
+
+                        if (data.bname !== '' && /[동|로|가]$/g.test(data.bname)) {
+                            extraAddr += data.bname;
+                        }
+
+                        if (data.buildingName !== '' && data.apartment === 'Y') {
+                            extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data
+                                .buildingName);
+                        }
+
+                        if (extraAddr !== '') {
+                            extraAddr = ' (' + extraAddr + ')';
+                        }
+
+                        document.getElementById("sample6_extraAddress").value = extraAddr;
+
+                    } else {
+                        document.getElementById("sample6_extraAddress").value = '';
+                    }
+
+
+                    document.getElementById('sample6_postcode').value = data.zonecode;
+                    document.getElementById("sample6_address").value = addr;
+
+                    document.getElementById("sample6_detailAddress").focus();
+                }
+            }).open();
+        }
+    </script>
+
+
+</body>
+
+<script>
+    let registerForm = document.getElementById("createSchedule");
+    let token = localStorage.getItem('jwt-token') ? localStorage.getItem('jwt-token') : document.cookie.split("kakao-token=")[1];
+    registerForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        let url = "http://seumchae.iptime.org:9323/calander/createSchedule"
+        let Uurl = localStorage.getItem('jwt-token') ? "http://seumchae.iptime.org:9323/user/getUser" : "http://seumchae.iptime.org:9323/user/getUserByKakaoToken";
+        try {
+            var user = await getUser({Uurl})
+            console.log(user["iskakao"])
+            await postFormFilesAsJson({
+                url
+            });
+            window.location.href = "main.html";
+        } catch (error) {
+            alert(error)
+            console.error(error)
+        }
+
+        async function postFormFilesAsJson({url}) {
+            let data = {
+                "token" : token,
+                "scheduleName": document.getElementById("scheduleName").value,
+                "address" : document.getElementById("sample6_address").value,
+                "appointment" : document.getElementById("start").value,
+                "appointmentDue" : document.getElementById("end").value,
+                "members" : document.getElementById("member").value,
+                "id" : document.getElementById("groupId").value,
+                "iskakao" : user["iskakao"]
+            };
+            let StringData = JSON.stringify(data);
+            console.log(StringData);
+            let fetchOptions = {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: StringData,
+            };
+
+            let res = await fetch(url, fetchOptions);
+            if (!res.ok) {
+                let error = await res.text();
+                throw new Error(error);
+            }
+        }
+        
+        async function getUser({Uurl}) {
+            let fetchOptions = {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: token,
+            };
+            let res = await fetch(Uurl, fetchOptions)
+            return res.json();
+        }
+    })
+</script>
+
+</html>

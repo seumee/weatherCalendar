@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마이페이지</title>
+    <link rel="stylesheet" href="CSS/index_my.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div>
+        <a href="javascript:window.history.back();">
+            <img  class="back" style="width: 7% ;" src="close.png">
+        </a>
+        <h1 style="margin: 0;">마이페이지</h1>
+    </div>
+
+    <div class="dividing"></div>
+
+    <img class="profile_img" src="profile.png">
+    <!-- 프로필 이미지 받아와야 함 -->
+    
+
+    <div class="profile_box" style="text-align: right">
+        <!-- 불러와야되는 정보 -->
+        <span >사용자 이메일 </span>
+        <span id = "userEmail"></span>
+        <br></br>
+        <span>주소 </span>
+        <span id = "userAddress"></span>
+    </div>
+    <br>
+    <div class="dividing2"></div>
+
+    <div>
+        <p class="blue_letter">알림 설정</p>
+    </div>
+
+    <div>
+        <a  class="plan"   onclick="location.href='mypage_per.html'">개인 일정</a>
+    </div>
+
+    <div class="dividing2"></div>
+
+    <div>
+        <a  class="plan"  onclick="location.href='mypage_gr.html'">그룹 일정</a>
+    </div>
+
+    <div class="dividing2"></div>
+
+    <div style="margin-bottom: 2%;">
+        <p class="blue_letter">날씨 알림 & 추천 일정</p>
+    </div>
+
+    <div>
+        <label class="OnOff" for="ON" style="width: 30%;">켜기/끄기</label>
+        <div class="toggle" >
+            <input type="checkbox" name="toggle1" id="toggle1" value="1">
+            <label for="toggle1"></label>
+        </div>
+    </div>
+    <div class="toggle">
+        
+        
+    </div>
+    <div class="dividing2"></div>
+
+
+    <div class="dividing2"></div>
+
+
+    <div>
+        <form class="login_button_position">
+            <button class="button_design" type="submit" onclick=logout() >
+                로그아웃
+            </button>
+        </form>
+        <form class="reverse_login_button_position">
+            <button class="reverse_button_design" type="submit" onclick="">
+                회원탈퇴
+            </button>
+        </form>
+        
+    </div>
+</body>
+
+<script>
+    function logout() {
+        if (window.localStorage.getItem("jwt-token")) {
+            window.localStorage.removeItem("jwt-token");
+        } else {
+            fetch("/oauth/logout?client_id=b0dd8d3f73b885212abb96c4f938dabe&logout_redirect_uri=http://localhost:63342/frontend-2/index.html");
+        }
+    }
+
+
+</script>
+
+<script>
+    let token = localStorage.getItem('jwt-token') ? localStorage.getItem('jwt-token') : document.cookie.split("kakao-token=")[1];
+    if (!token) {
+        window.location.replace("http://seumchae.iptime.org:8994/index.html");
+    }
+    let url = localStorage.getItem('jwt-token') ? "http://seumchae.iptime.org:9323/user/getUser" : "http://seumchae.iptime.org:9323/user/getUserByKakaoToken";
+
+    (async () => {
+        try {
+            let responseData = await postFormFilesAsJson({url});
+            console.log(responseData)
+            let userEmail = document.getElementById("userEmail")
+            userEmail.innerHTML = `<h4>${responseData["email"]}</h4>`
+            let userAddress =  document.getElementById("userAddress")
+            userAddress.innerHTML =`<h4>${responseData["address"]}</h4>`
+        } catch (error) {
+            console.log(error)
+        }
+    })();
+
+    async function postFormFilesAsJson({url}) {
+        let fetchOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+            },
+            body: token,
+        };
+        let res = await fetch(url, fetchOptions)
+
+        return res.json();
+    }
+
+</script>
+</html>

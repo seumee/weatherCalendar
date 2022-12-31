@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인</title>
+    <link rel="stylesheet" href="CSS/index.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="CSS\index_my.css">
+</head>
+
+<body>
+
+    <div class="Second_img">
+        <img src="Logo (25).png">
+    </div>
+
+    <form id="login_form" method="post" action="http://seumchae.iptime.org:9323/user/login" class="input_position">
+        <input class="input_design" type="email" id="email" name="email" placeholder="weather@gmail.com">
+        <input class="input_design" type="password" id="pwd" name="password" placeholder="⦁⦁⦁⦁⦁⦁">
+
+
+        <div class="login_button_position">
+            <button class="button_design" type="submit">
+                로그인
+            </button>
+        </div>
+    </form>
+
+    <div class="three_join">
+        <a onclick="location.href='membership.html'">회원가입</a>
+        <!-- <a href="이동할페이지">아이디 찾기</a>
+        <a href="이동할페이지">비밀번호 찾기</a> -->
+        <!-- 아이디찾기 비밀번호 찾기 안할거면 주석처리 -->
+    </div>
+
+    <div class="line_position">
+        <span class="line">간편 로그인</span>
+    </div>
+
+    <div class="kakao_login_button_position">
+        <button class="kakao_button_design" type="submit"
+            onclick="location.href='https://kauth.kakao.com/auth/authorize?client_id=a665471051b1b741a044d1a70f144716&redirect_uri=http://seumchae.iptime.org:9323/auth/kakao/callback&response_type=code'">
+            카카오 로그인
+        </button>
+    </div>
+</body>
+
+<script>
+    let login_form = document.getElementById("login_form");
+    login_form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        let form = e.currentTarget;
+        let url = form.action;
+        try {
+            let responseData = await postFormFilesAsJson({
+                url
+            });
+            localStorage.setItem('jwt-token', responseData.token);
+            window.location.href = "main.html";
+        } catch (error) {
+            alert(error);
+            console.error(error)
+        }
+
+        async function postFormFilesAsJson({
+            url
+        }) {
+            let data = {
+                "email": document.getElementById("email").value,
+                "pwd": document.getElementById("pwd").value,
+            };
+            let StringData = JSON.stringify(data);
+            console.log(StringData);
+            let fetchOptions = {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: StringData,
+
+            };
+            let res = await fetch(url, fetchOptions)
+            if (!res.ok) {
+                let error = await res.text();
+                throw new Error(error);
+            }
+            return res.json();
+        }
+    })
+</script>
+<script src="https://code.jquery.com/jquery-3.6.1.min.js"
+    integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
+
+<script>
+    jQuery(function ($) {
+        $("body").css("display", "none");
+        $("body").fadeIn(1000);
+        $("a.transition").click(function (event) {
+            event.preventDefault();
+            linkLocation = this.href;
+            $("body").fadeOut(1000, redirectPage);
+        });
+
+        function redirectPage() {
+            window.location = linkLocation;
+        }
+    });
+</script>
+
+
+
+</html>

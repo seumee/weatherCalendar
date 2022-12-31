@@ -1,0 +1,222 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# setWeather(scheduleNum) 호출
+# --------------------------
+# -> executeSql로 schedule 정보 조회
+# 
+#     -> geocoding 도로명주소 좌표값 변환 // 별도 처리
+# 
+# -> findaway에 좌표값 전달 -> transit_route에서 findaway로 조회한 경로에서 도보 추출
+# 
+# -> 해당 도보 경로의 날씨 조회 -> DB 업로드
+
+# In[1]:
+
+
+from geopy.geocoders import Nominatim
+import requests
+import pprint
+from bs4 import BeautifulSoup
+from datetime import *
+import urllib.request, json
+from sshtunnel import SSHTunnelForwarder
+import pymysql
+import sys
+
+
+# In[ ]:
+
+
+"""def transit_route"""
+badWeathers = [201, 202, 232, 301, 302, 310, 314, 501, 502, 503, 504, 521, 
+               522, 531, 601, 602, 616, 711, 731, 751, 761, 762, 771, 781, 
+               900, 901, 902, 956, 957, 958, 959, 960, 961, 962]
+#badWeathers = ['태풍']
+#badWeathers = ['비를 동반한 천둥구름', '폭우를 동반한 천둥구름']
+
+def WeatherOX(weathers, targetDate):
+    for w in weathers:
+        if w[targetDate] in badWeathers:
+            return True
+    return False
+
+
+# In[2]:
+
+
+"""def transit_route"""
+def transit_route(origin_lat, origin_lon, destination_lat,destination_lon):
+    #Google MapsDdirections API endpoint
+    endpoint = "https://maps.googleapis.com/maps/api/directions/json?"
+    api_key= "AIzaSyBRRvsR_jj8_NajJiFRcIBl3_Hc-3eicOA"
+    nav_request = 'origin={},{}&destination={},{}&mode=transit&transit_routing_preference=fewer_transfers&key={}'.format(origin_lat, origin_lon, destination_lat ,destination_lon,api_key)
+    request = endpoint + nav_request
+    #Sends the request and reads the response.
+    response = urllib.request.urlopen(request).read()
+    #Loads response as JSON
+    directions = json.loads(response)
+    return directions
+
+
+# In[3]:
+
+
+"""def findaway"""
+def findaway(lat_beg, lon_beg, lat_fin, lon_fin):
+    cord_list = []
+    way = transit_route(lat_beg, lon_beg ,lat_fin, lon_fin)['routes'][0]['legs'][0]['steps']
+    for i in range(len(way)):
+        if way[i]['travel_mode'] == 'WALKING':
+            cord_list.append(way[i]['start_location'])
+    
+    return cord_list
+
+
+# In[4]:
+
+
+"""def getWeather"""
+def getWeather(cord):
+    part = 'hourly,minutely'
+    service_key = '36afa2e28efc2803bc05866ef6460430'
+    today = str(date.today()).replace('-', '')
+
+    weather = []
+    lat = cord['lat']
+    lon = cord['lng']
+    params = f'lat={lat}&lon={lon}&units=metric&exclude={part}&lang=kr&appid={service_key}'
+    url = 'https://api.openweathermap.org/data/3.0/onecall?' + params
+    res = requests.get(url)
+    if res.status_code == 200:
+        data = res.json()
+        weather.append(data)
+    else:
+        print("Error Code", res.status_code)
+
+    desc = []
+    id = []
+    icon = []
+    desc.append(weather[0]['current']['weather'][0]['description'])
+    id.append(weather[0]['current']['weather'][0]['id'])
+    icon.append(weather[0]['current']['weather'][0]['icon'])
+    for p in range(len(weather)):
+        for q in range(8):
+            weather_ = weather[p]['daily'][q]['weather'][0]
+            desc.append(weather_['description'])
+            id.append(int(weather_['id']))
+            icon.append(weather_['icon'])
+    
+    result_desc = weatherDateLabel(desc)
+    result_id = weatherDateLabel(id)
+    result_icon = weatherDateLabel(icon)
+
+    return result_desc, result_id, result_icon 
+
+
+# In[27]:
+
+
+"""def weatherDateLabel"""
+def weatherDateLabel(desc):
+    labeled = {}
+    today = date.today()
+    for i in range(0, 9, 1):
+        dayAfter = timedelta(days=i)
+        strDayAfter = str(today + dayAfter)
+        labeled[strDayAfter] = desc[i]
+    return labeled
+
+
+# In[5]:
+
+
+"""def geocoding"""
+geo_local = Nominatim(user_agent = 'South Korea')
+
+def geocoding(address):
+    
+    try:
+        geo = geo_local.geocode(address)
+        x_y = [geo.latitude, geo.longitude]
+        return x_y
+    
+    except :
+        return [0,0]
+
+
+# In[6]:
+
+
+"""def executeSql"""
+def executeSql(cmd):
+    with SSHTunnelForwarder(('seumchae.iptime.org', 8022),
+                            ssh_username='capstone',
+                            ssh_password='capstone2022',
+                            remote_bind_address=('127.0.0.1', 3306)) as tunnel:
+        with pymysql.connect(host='127.0.0.1', user='root', password='capstone2022', port=tunnel.local_bind_port,
+                             db='Capstone', charset="utf8", cursorclass=pymysql.cursors.DictCursor) as conn:
+            with conn.cursor() as cur:
+
+                sql = cmd
+                cur.execute(sql)
+                results = cur.fetchall()
+                conn.commit()
+    return results
+
+
+# In[28]:
+
+
+"""def setWeather"""
+#input = sys.argv[1], sys.argv[2]
+#       (True/False),(scheduleNum)
+def setWeather(isGroup, num):
+    date_result = executeSql('select appointment from schedule where num = ' + str(num))
+    
+    now = datetime.now()
+    date = date_result[0]['appointment']
+    how_far = (date - now).days
+    if how_far > 6:
+        return 'date far'
+    else:
+        if isGroup == 'True':
+            #그룹일정 날씨 업데이트
+            print()
+        else:
+            #개인일정 날씨 업데이트
+            #get scheduleNum, personal ret from DB
+            dst = executeSql('select lat, lon from schedule where num=' + str(num))
+            stt = executeSql('select lat, lon from client where email=(select email from schedule where num={})'.format(str(num)))
+            dst = dst[0]
+            stt = stt[0]
+            #call findaway
+            cord_list = findaway(stt['lat'], stt['lon'], dst['lat'], dst['lon'])
+            weathers = []
+            for cord in cord_list:
+                weathers.append(getWeather(cord))
+
+            weatherDesc = []
+            weatherId = []
+            weatherIcon = []
+            for w in weathers:
+                weatherDesc.append(w[0])
+                weatherId.append(w[1])
+                weatherIcon.append(w[2])
+            
+            date = executeSql('select appointment from schedule where num=' + str(num))
+            stringDate = date[0]['appointment'].strftime('%Y-%m-%d')
+            
+            cannotGo = WeatherOX(weatherId, stringDate)
+            
+            if cannotGo:
+                #DB weather에 X
+                updateResult = executeSql(f'UPDATE schedule SET weather=\'X\' WHERE num = '+str(num))
+            else:
+                #DB weather에 O
+                updateResult = executeSql(f'UPDATE schedule SET weather=\'O\' WHERE num = '+str(num))
+
+
+# """def markWeather"""
+# def markWeather(cannotGo, ):
+#     

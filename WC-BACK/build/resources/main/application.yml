@@ -1,0 +1,23 @@
+kakao:
+  apiKey : a665471051b1b741a044d1a70f144716
+  callbackURL : http://seumchae.iptime.org:9323/auth/kakao/callback
+  #url : https://kauth.kakao.com/auth/authorize?client_id=b0dd8d3f73b885212abb96c4f938dabe&redirect_uri=http://localhost:8080/auth/kakao/callback&response_type=code
+
+jwt:
+  password : testPassword
+
+spring:
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url : jdbc:mariadb://localhost:3306/Capstone?allowPublicKeyRetrieval=true&useSSL=false
+    username : root
+    password : capstone2022
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: true
+
+# git token : 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

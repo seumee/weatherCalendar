@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입</title>
+    <link rel="stylesheet" href="CSS/index_my.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div>
+        <a data-transition="slide" href="javascript:window.history.back();">
+            <img style="margin: 0; width: 8%;" class="back" src="free-icon-left-7666138.png">
+        </a>
+
+        <h1 style="margin: 0;">회원가입</h1>
+    </div>
+
+    <div class="dividing"></div>
+
+    <!-- form -->
+
+    <form class="pure-form" id="register-form" method="post" action="http://seumchae.iptime.org:9323/user/register">
+        <div class="members_input">
+            <h3>이메일</h3>
+        </div>
+        <input class="input_design_short" type="email" id="email" name="email" placeholder="weather@gmail.com" style="width: 85%">
+
+<!--        <button class="button_design_short" type="submit" id="checkEmail">-->
+<!--            중복확인-->
+<!--        </button>-->
+
+        <div class="members_input">
+            <h3>비밀번호</h3>
+        </div>
+        <div class="members_input_position">
+            <input class="members_input_design" id="pwd" type="password" name="password" placeholder="⦁⦁⦁⦁⦁⦁" required>
+        </div>
+
+        <div class="members_input">
+            <h3>비밀번호 확인</h3>
+        </div>
+        <div class="members_input_position">
+            <input class="members_input_design" type="password" name="passwordCheck" placeholder="⦁⦁⦁⦁⦁⦁"
+                id="confirm_password" required>
+        </div>
+
+        <div class="members_input">
+            <h3>이름</h3>
+        </div>
+        <div class="members_input_position">
+            <input class="members_input_design" id="name" type="text" name="name" placeholder="이름">
+        </div>
+
+        <div class="members_input">
+            <h3>주소</h3>
+        </div>
+
+        <!-- 주소 API추가 항목  -->
+        <!-- 여기는 API추가한 부분이라 아직수정전?? -->
+        <!-- 아래 주소API -->
+        <!-- 여기에 input요소 더 있음  -->
+
+        <div class="members_input_position" name="address">
+
+            <input type="text" class="members_input_design" id="sample6_postcode" placeholder="우편번호"
+                style="width: 25%;">
+            <input type="button" onclick="sample6_execDaumPostcode()" value="우편번호 찾기"><br>
+            <input type="text" class="members_input_design" id="sample6_address" placeholder="주소"
+                style="width: 60%;"><br>
+            <input type="text" class="members_input_design" id="sample6_detailAddress" placeholder="상세주소">
+            <input type="text" class="members_input_design" id="sample6_extraAddress" placeholder="참고항목"
+                style="width: 60%;">
+
+
+            <!-- 수정 -->
+            <!-- 클래스 추가 id추가 -->
+            <button type="submit" class="button_design_short2 pure-button pure-button-primary" id="join">
+                가입하기
+            </button>
+        </div>
+    </form>
+
+
+
+
+
+    <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <script>
+        function sample6_execDaumPostcode() {
+            new daum.Postcode({
+                oncomplete: function (data) {
+
+                    var addr = '';
+                    var extraAddr = '';
+
+
+                    if (data.userSelectedType === 'R') {
+                        addr = data.roadAddress;
+                    } else {
+                        addr = data.jibunAddress;
+                    }
+
+
+                    if (data.userSelectedType === 'R') {
+
+                        if (data.bname !== '' && /[동|로|가]$/g.test(data.bname)) {
+                            extraAddr += data.bname;
+                        }
+
+                        if (data.buildingName !== '' && data.apartment === 'Y') {
+                            extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data
+                                .buildingName);
+                        }
+
+                        if (extraAddr !== '') {
+                            extraAddr = ' (' + extraAddr + ')';
+                        }
+
+                        document.getElementById("sample6_extraAddress").value = extraAddr;
+
+                    } else {
+                        document.getElementById("sample6_extraAddress").value = '';
+                    }
+
+
+                    document.getElementById('sample6_postcode').value = data.zonecode;
+                    document.getElementById("sample6_address").value = addr;
+
+                    document.getElementById("sample6_detailAddress").focus();
+                }
+            }).open();
+        }
+    </script>
+
+    <script>
+        var password = document.getElementById("pwd"),
+            confirm_password = document.getElementById("confirm_password");
+
+        function validatePassword() {
+            if (password.value != confirm_password.value) {
+                confirm_password.setCustomValidity("비밀번호가 일치하지 않습니다");
+            } else {
+                confirm_password.setCustomValidity(
+                    '');
+            }
+        }
+
+
+        password.onchange = validatePassword;
+        confirm_password.onkeyup = validatePassword;
+    </script>
+
+    <!--회원가입 기능-->
+    <script>
+        let registerForm = document.getElementById("register-form");
+        registerForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            let form = e.currentTarget;
+            let url = form.action;
+            try {
+                let responseData = await postFormFilesAsJson({
+                    url
+                });
+                localStorage.setItem('jwt-token', responseData.token);
+                window.location.href = "main.html";
+            } catch (error) {
+                alert(error)
+                console.error(error)
+            }
+
+            async function postFormFilesAsJson({
+                url
+            }) {
+                let data = {
+                    "email": document.getElementById("email").value,
+                    "pwd": document.getElementById("pwd").value,
+                    "name": document.getElementById("name").value,
+                    "address" : document.getElementById("sample6_address").value
+                };
+                let StringData = JSON.stringify(data);
+                console.log(StringData);
+                let fetchOptions = {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                    },
+                    body: StringData,
+                };
+
+                let res = await fetch(url, fetchOptions);
+                if (!res.ok) {
+                    let error = await res.text();
+                    throw new Error(error);
+                }
+                return res.json();
+            }
+        })
+    </script>
+
+
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js"
+        integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
+
+    <script>
+        document.getElementById("checkEmail").onclick = function () {
+            alert("중복확인");
+        }
+        // 중복확인 기능이 있었나?
+
+
+        $('form').on('submit', function (e) {
+            if (document.getElementById('sample6_postcode').value == '') {
+                alert('항목을 모두 기입해주세요.');
+                e.preventDefault();
+            } else if (document.getElementById('email').value == '') {
+                alert('항목을 모두 기입해주세요.');
+                e.preventDefault();
+            } else if (document.getElementById('pwd').value == '') {
+                alert('항목을 모두 기입해주세요.');
+                e.preventDefault();
+            } else if (document.getElementById('confirm_password').value == '') {
+                alert('항목을 모두 기입해주세요.');
+                e.preventDefault();
+            } else if (document.getElementById('name').value == '') {
+                alert('항목을 모두 기입해주세요.');
+                e.preventDefault();
+            } else {
+                document.getElementById("join").onclick = function () {
+                    alert("가입 완료");
+                };
+            }
+        });
+    </script>
+</body>
+
+</html>

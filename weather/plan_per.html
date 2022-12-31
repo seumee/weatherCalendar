@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>개인 일정 목록</title>
+        <link rel="stylesheet" href="CSS/index_my.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
+    </head>
+<body>
+    
+<div class="place_container">
+
+        <!--  수정 -->
+        <!-- 여기서 바로 개인 만들기 페이지 이동 가능 -->
+        <!-- <button type="button"> -->
+            <div>
+                <a href="make_personal_plan.html">
+                    <img class="plus_button" src="icons8-plus-48.png" alt="">
+                </a>
+            </div>
+
+
+    <div>
+        <a href="javascript:window.history.back();">
+            <img style="margin: 0; width: 8%;" class="back" src="free-icon-left-7666138.png">
+        </a>
+
+        <h1 style="margin: 0;">개인 일정 목록</h1>
+    </div>
+    <div class="dividing"></div>
+
+    <div id = "sc" style="font-weight: bold;">
+    </div>
+ 
+    
+</div>
+
+
+
+</body>
+<script>
+    let token = localStorage.getItem('jwt-token') ? localStorage.getItem('jwt-token') : document.cookie.split("kakao-token=")[1];
+    let url = localStorage.getItem('jwt-token') ? "http://seumchae.iptime.org:9323/user/getUser" : "http://seumchae.iptime.org:9323/user/getUserByKakaoToken";
+
+    (async () => {
+        try {
+            let responseData = await postFormFilesAsJson({url});
+            console.log(responseData)
+            let email = responseData["email"]
+            let geturl = "http://seumchae.iptime.org:9323/calander/getAllSchedule"
+            let schedule = await getSchedule({email, geturl})
+            const sc = document.getElementById("sc");
+            if (schedule.length >=1) {
+                schedule.forEach((e,i,a) => {
+                    let p = document.createElement("p");
+                    p.innerHTML = `<br><span style="font-size: 25px">${e["scheduleName"]}</span><br>`
+                    let li = document.createElement("span");
+                    li.innerHTML = `<li>장소 : ${e["address"]}</li>`
+                    li.innerHTML += `<li>날짜 : ${formatDate(e["appointment"]).toString()} ~ ${formatDate(e["appointmentDue"]).toString()}</li>
+                                        <br><div class="dividing"></div>`
+                    p.appendChild(li)
+                    document.getElementById("sc").appendChild(p)
+                })
+            }
+         
+            console.log(schedule)
+        } catch (error) {
+            alert(error)
+            console.log(error)
+        }
+    })();
+
+    async function postFormFilesAsJson({url}) {
+        let fetchOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+            },
+            body: token,
+        };
+        let res = await fetch(url, fetchOptions)
+        console.log(res)
+        return res.json();
+    }
+
+    async function getSchedule({email, geturl}) {
+        let fetchOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+            },
+            body: email,
+        };
+        let res = await fetch(geturl, fetchOptions)
+        console.log(res)
+        return res.json();
+    }
+
+    function formatDate(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+        return [year, month, day].join('-');
+    }
+</script>
+</html>
