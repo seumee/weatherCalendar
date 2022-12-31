@@ -1,3 +1,0 @@
-from Functions import *
-
-print()
